@@ -4,6 +4,10 @@ const FORMALITY = { meeting: ['formal'], normal: ['formal', 'smart-casual'], cas
 // Bottoms, shoes, layers and accessories are looser (few formal ones): office days just skip casual ones like joggers or sandals.
 const LOOSE = { meeting: ['formal', 'smart-casual'], normal: ['formal', 'smart-casual'], casual: ['formal', 'smart-casual', 'casual'] };
 export const DAY_TYPES = ['normal', 'meeting', 'casual', 'ethnic'];
+const RANK = { formal: 0, 'smart-casual': 1, casual: 2 };
+const gap = (a, b) => Math.abs((RANK[a?.formality] ?? 1) - (RANK[b?.formality] ?? 1)); // formality steps apart
+// Leather family from the colour name (multi-colour hexes average to grey, so names are more reliable).
+const fam = (i) => (/brown|tan/.test(i?.color || '') ? 'brown' : /^black/.test(i?.color || '') ? 'black' : '');
 const AGE_CAP = 30; // "not worn for 30+ days" all count the same, so weather and colour can still matter
 
 const days = (a, b) => Math.round((Date.UTC(...a.split('-').map((n, i) => (i === 1 ? n - 1 : +n))) - Date.UTC(...b.split('-').map((n, i) => (i === 1 ? n - 1 : +n)))) / DAY);
@@ -65,7 +69,7 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
       if (t.neverWith?.includes(b.id) || b.neverWith?.includes(t.id)) continue;
       if (skip.includes(comboKey(t, b))) continue;
       if (L.combo && comboSince(t, b) < L.combo) continue;
-      const s = score(t) + score(b) - clash(t, b);
+      const s = score(t) + score(b) - clash(t, b); // no formality term here: it made the same pairs repeat (simulate.mjs)
       if (!best || s > best.s) best = { t, b, s };
     }
     if (!best) continue;
@@ -78,18 +82,27 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     if (max != null && !hot && !wet && !cold) out.reasons.push(`${max}°, rain ${rain ?? 0}%: no weather change needed`);
     out.reasons.push(since(t) >= 999 ? 'Top not worn yet' : `Top not worn for ${since(t)} days`);
     // One of each extra, the longest-unworn that fits the day; a different one from `exclude` when possible.
-    const extra = (cat) => {
-      if (lock[cat]) return byId(lock[cat]);
+    // fit(i) = how well it goes with the rest; rotation (score) still dominates. Returns [best, best ignoring fit].
+    const extra = (cat, fit = () => 0) => {
+      if (lock[cat]) return [byId(lock[cat]), byId(lock[cat])];
       let l = live.filter((i) => i.category === cat && !t.neverWith?.includes(i.id) && !b.neverWith?.includes(i.id));
       l = prefer(prefer(l, (i) => LOOSE[type].includes(i.formality)), (i) => !exclude.includes(i.id));
-      return l.sort((x, y) => score(y) - score(x))[0];
+      const best = (f) => [...l].sort((x, y) => score(y) + f(y) - score(x) - f(x))[0];
+      return [best(fit), best(() => 0)];
     };
+    // Shoes: same formality as the top; no light shoes in rain; not the same leather shade as the trousers.
+    const rainShoe = (i) => (wet && lum(i.colorHex) > 150 ? -20 : 0);
+    const shoeFit = (i) => -5 * (gap(i, t) + gap(i, b)) + rainShoe(i) - (fam(i) && fam(i) === fam(b) && Math.abs(lum(i.colorHex) - lum(b.colorHex)) < 30 ? 10 : 0);
     if (cold || settings.coldOffice || lock.layer) {
-      const l = extra('layer');
+      const [l] = extra('layer', (i) => -4 * gap(i, t));
       if (l) { out.layer = l; if (!lock.layer) out.reasons.push(cold ? `${max}°C: add a layer` : 'Cold office: add a layer'); }
     }
-    const sh = extra('shoes'), ac = extra('accessory');
+    const [sh, sh0] = extra('shoes', shoeFit);
     if (sh) out.shoes = sh;
+    if (sh && sh0 && sh !== sh0 && rainShoe(sh0) && !rainShoe(sh)) out.reasons.push(`Rain ${rain}%: darker shoes`);
+    // Watch: a leather strap should be the same family as the shoes (brown with brown, black with black).
+    const strap = (i) => (/brown strap/.test(i.color) ? 'brown' : /black strap/.test(i.color) ? 'black' : '');
+    const [ac] = extra('accessory', (i) => (!strap(i) || !fam(sh) ? 0 : strap(i) === fam(sh) ? 8 : -15) - 4 * gap(i, t));
     if (ac) out.accessory = ac;
     return out;
   }

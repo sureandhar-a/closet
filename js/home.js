@@ -62,7 +62,11 @@ export async function render(view) {
       if (p && !st.seen.length && !Object.keys(st.lock).length) {
         const o = { top: p.top, bottom: p.bottom, shoes: p.shoes };
         for (const k in o) o[k] = items.find((i) => i.id === o[k]);
-        if (o.top && o.bottom && !o.top.neverWith?.includes(o.bottom.id) && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) picks.push({ o, reasons: ['Planned on the laptop'], planned: true });
+        if (o.top && o.bottom && !o.top.neverWith?.includes(o.bottom.id) && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) {
+          // Through the picker with the planned pieces kept, so the watch/layer fit and weather reasons apply too.
+          const r = ask([], Object.fromEntries(Object.entries(o).filter(([, i]) => i).map(([k, i]) => [k, i.id])));
+          if (!r.missing) picks.push({ o: { top: r.top, bottom: r.bottom, layer: r.layer, shoes: r.shoes, accessory: r.accessory }, reasons: ['Planned on the laptop', ...r.reasons.filter((x) => !/^Top not worn/.test(x))], planned: true });
+        }
       }
       // Up to two suggestions with different tops (and other pieces where possible); cycle through everything before repeating.
       for (let n = picks.length; n < 2; n++) {
