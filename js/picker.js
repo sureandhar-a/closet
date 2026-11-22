@@ -1,6 +1,8 @@
 // Pure outfit rules. No DOM/db imports so it runs in the browser and in Node.
 const DAY = 864e5;
 const FORMALITY = { meeting: ['formal'], normal: ['formal', 'smart-casual'], casual: ['smart-casual', 'casual'] };
+// Bottoms are looser (few formal pairs): office days just skip casual ones like joggers.
+const BOTTOM_FORMALITY = { meeting: ['formal', 'smart-casual'], normal: ['formal', 'smart-casual'], casual: ['formal', 'smart-casual', 'casual'] };
 export const DAY_TYPES = ['normal', 'meeting', 'casual', 'ethnic'];
 
 const days = (a, b) => Math.round((Date.UTC(...a.split('-').map((n, i) => (i === 1 ? n - 1 : +n))) - Date.UTC(...b.split('-').map((n, i) => (i === 1 ? n - 1 : +n)))) / DAY);
@@ -19,7 +21,7 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
   const since = (i) => (last.has(i.id) ? days(date, last.get(i.id)) : 999);
   const comboSince = (t, b) => Math.min(...log.filter((e) => e.date <= date && e.items.includes(t.id) && e.items.includes(b.id)).map((e) => days(date, e.date)), 999);
 
-  // Tops: filter by formality (bottoms are not filtered). Ethnic falls back to normal if none exist.
+  // Tops and bottoms filter by formality. Ethnic falls back to normal if none exist.
   let type = dayType, reasons = [];
   let tops = type === 'ethnic' ? live.filter((i) => i.category === 'ethnic') : [];
   if (!tops.length) {
@@ -27,7 +29,9 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     tops = live.filter((i) => i.category === 'top' && FORMALITY[type].includes(i.formality));
   }
   tops = tops.filter((t) => !exclude.includes(t.id)); // ids already offered (e.g. suggestion #1)
-  const bottoms = live.filter((i) => i.category === 'bottom');
+  const allBottoms = live.filter((i) => i.category === 'bottom');
+  let bottoms = allBottoms.filter((i) => BOTTOM_FORMALITY[type].includes(i.formality));
+  if (!bottoms.length && allBottoms.length) { bottoms = allBottoms; reasons.push('No office-ready bottoms clean, using a casual pair'); }
   const max = weather.max, rain = weather.rain;
   const hot = max >= 32, wet = rain >= 60, cold = max <= 15;
 
