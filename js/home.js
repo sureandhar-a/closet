@@ -50,6 +50,12 @@ export async function render(view) {
       ${date === today ? '<button class="btn primary" id="tmrw">Plan tomorrow →</button>' : ''}</div>`;
   } else {
     const ask = (exclude, lock = st.lock) => pickOutfit({ items, log, date, weather: w || {}, dayType: type, settings: s, exclude, lock });
+    // Kept suggestions hold item copies: refresh them (a sync brings new photos/tags); start over if a piece is gone.
+    if (st.picks && !st.picks[0].missing) {
+      const fresh = (i) => items.find((x) => x.id === i.id && !x.archived && x.status !== 'laundry');
+      if (st.picks.every((x) => setOf(x.o).every(fresh))) for (const x of st.picks) for (const k of SLOTS) { if (x.o[k]) x.o[k] = fresh(x.o[k]); }
+      else st.picks = null;
+    } else st.picks = null;
     if (!st.picks) {
       const picks = [];
       const p = plan?.days?.[date];
