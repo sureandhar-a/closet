@@ -39,7 +39,8 @@ export async function prepareImage(file, max = 600) {
     out = card;
   }
   const h = (v) => Math.round(v / (n || 1)).toString(16).padStart(2, '0');
-  return { dataUrl: out.toDataURL('image/png'), hex: n ? `#${h(r)}${h(gr)}${h(b)}` : '#808080', transparent };
+  const ratio = transparent && x1 >= x0 ? (y1 - y0 + 1) / (x1 - x0 + 1) : null; // cut-out shape, for top vs bottom
+  return { dataUrl: out.toDataURL('image/png'), hex: n ? `#${h(r)}${h(gr)}${h(b)}` : '#808080', transparent, ratio };
 }
 
 // Colour name from hue/lightness, so shade and slight tints don't flip the name. Pre-fills the field; you can edit it.

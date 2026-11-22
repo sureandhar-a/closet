@@ -60,12 +60,12 @@ export async function render(view) {
 }
 
 function sheet(item, done) {
-  const opt = (arr, cur) => arr.map((v) => `<option ${v === cur ? 'selected' : ''}>${v}</option>`).join('');
+  const opt = (arr, cur) => [...new Set([...arr, cur].filter(Boolean))].map((v) => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
   const p = openSheet(`
     <div class="hero-img"><img src="${imgSrc(item)}" alt=""></div>
     <div class="kv"><div><b>${item.wearCount}</b><span>wears</span></div>
       <div><b>${item.lastWorn ? niceDate(item.lastWorn) : '—'}</b><span>last worn</span></div>
-      <div><b>${esc(item.category)}</b><span>type</span></div></div>
+      <div><b>${esc(item.type || item.category)}</b><span>type</span></div></div>
     <div class="field"><span class="lbl">Beautify (studio photo, made on the laptop)</span>
       <button class="chip" id="f-beau" aria-pressed="${item.beautify === 'requested'}">${
         item.beautify === 'requested' ? '✨ Requested · tap to cancel' : item.beautify === 'done' ? '✨ Beautified · tap to redo' : '✨ Beautify this item'}</button>
@@ -73,7 +73,10 @@ function sheet(item, done) {
     <div class="field"><span class="lbl">Status</span><div class="chips">${['clean', 'worn', 'laundry']
       .map((s) => `<button class="chip" data-s="${s}" aria-pressed="${item.status === s}">${s}</button>`).join('')}</div></div>
     <div class="field"><label>Colour name</label><input class="input" id="f-color" value="${esc(item.color)}"></div>
+    <div class="field"><label>Category</label><select class="input" id="f-cat">${opt(CATS.slice(1).map(([k]) => k), item.category)}</select></div>
+    <div class="field"><label>Type</label><input class="input" id="f-type" value="${esc(item.type || '')}" placeholder="e.g. shirt, loafers, watch"></div>
     <div class="field"><label>Formality</label><select class="input" id="f-form">${opt(FORMALITY, item.formality)}</select></div>
+    <div class="field"><label>Pattern</label><select class="input" id="f-pat">${opt(['solid', 'check', 'stripe', 'print'], item.pattern)}</select></div>
     ${item.pendingUpload ? '<button class="btn block" id="f-up" style="margin-bottom:10px">☁️ Upload photo to Drive</button>' : ''}
     <div class="row"><button class="btn" id="f-arch">${item.archived ? 'Restore' : 'Archive'}</button>
       <button class="btn primary" id="f-save">Save</button></div>`);
@@ -83,7 +86,11 @@ function sheet(item, done) {
     p.querySelectorAll('[data-s]').forEach((x) => x.setAttribute('aria-pressed', x === b));
   }));
   const save = async (extra = {}) => {
-    Object.assign(item, { status, color: $('#f-color', p).value.trim() || item.color, formality: $('#f-form', p).value, updated: Date.now(), ...extra });
+    const tags = { color: $('#f-color', p).value.trim() || item.color, category: $('#f-cat', p).value, type: $('#f-type', p).value.trim() || item.type,
+      formality: $('#f-form', p).value, pattern: $('#f-pat', p).value };
+    // Your edits win over the laptop's tags until the laptop has seen them (sent with the next sync).
+    if (Object.entries(tags).some(([k, v]) => item[k] !== v)) Object.assign(item, tags, { tagSource: 'user', editedAt: Date.now() });
+    Object.assign(item, { status, updated: Date.now(), ...extra });
     await put('items', item);
     closeSheet(); done();
   };

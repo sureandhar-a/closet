@@ -4,6 +4,7 @@ import { put } from './db.js';
 import { prepareImage, colorName } from './image.js';
 import { $, esc, toast } from './ui.js';
 import { uploadBatchToDrive } from './drive.js';
+import { guessTags } from './recognize.js';
 
 const CATS = ['top', 'bottom', 'shoes', 'layer', 'ethnic', 'accessory'];
 const FORM = ['formal', 'smart-casual', 'casual'];
@@ -39,12 +40,28 @@ async function addFiles(view, files) {
   for (const file of files) {
     try {
       const img = await prepareImage(file);
-      q.push({ file, img, f: { category: 'top', formality: 'smart-casual', pattern: 'solid', sleeves: 'full', color: colorName(img.hex), hex: img.hex } });
+      const it = { file, img, guess: 'busy', f: { category: 'top', type: 'shirt', formality: 'smart-casual', pattern: 'solid', sleeves: 'full', color: colorName(img.hex), hex: img.hex } };
+      q.push(it);
+      // First guess on the phone; fills in only what you haven't changed yourself.
+      guessTags(img.dataUrl, img.ratio).then((g) => {
+        const showing = q[cur] === it && view.isConnected;
+        if (showing) keepForm(view, it); // save typing first, so the guess can't be undone by a stale field
+        it.guess = g ? g.label : 'none';
+        if (g && !it.touched) Object.assign(it.f, { category: g.category, type: g.type, formality: g.formality });
+        if (showing) review(view);
+      });
     } catch { toast(`Could not read ${file.name}`); }
   }
   if (!q.length) return start(view);
   cur = Math.min(before, q.length - 1);
   review(view);
+}
+
+function keepForm(view, it) { // copy the typed colour back before re-rendering
+  const c = $('#color', view), h = $('#hex', view);
+  if (c) { it.f.color = c.value.trim(); it.f.hex = h.value; }
+  const t = $('#type', view);
+  if (t && t.value.trim() && t.value.trim() !== it.f.type) { it.f.type = t.value.trim(); it.touched = true; }
 }
 
 function review(view) {
@@ -58,10 +75,11 @@ function review(view) {
       <label class="strip-t more" aria-label="Take another photo">📷<input type="file" accept="image/*" capture="environment" hidden></label>
       <label class="strip-t more" aria-label="Pick more from gallery">＋<input type="file" accept="image/*" multiple hidden></label></div>
     <div class="hero-img" style="height:240px;margin-top:8px"><img src="${it.img.dataUrl}" alt=""></div>
-    ${it.img.transparent ? '' : '<p class="muted" style="margin-top:6px">Background will be removed on the laptop.</p>'}
+    <p class="muted" style="margin-top:6px">${it.guess === 'busy' ? '🔎 Recognising… (first time downloads the model, ~15 MB)' : it.guess === 'none' ? 'Couldn’t tell what this is — pick below. The laptop checks it at sync.' : `🔎 Looks like <b>${esc(it.guess)}</b>. Change anything below; the laptop double-checks at sync.`}</p>
     <div class="field"><label for="color">Colour name</label><div class="row"><input class="input" id="color" placeholder="e.g. navy blue" value="${esc(f.color)}">
       <input type="color" id="hex" value="${f.hex}" aria-label="Colour" style="flex:none;width:56px;height:44px;border:0;background:none"></div></div>
     <div class="field"><span class="lbl">Category</span>${chips('category', CATS)}</div>
+    <div class="field"><label for="type">Type</label><input class="input" id="type" placeholder="e.g. shirt, loafers, watch" value="${esc(f.type || '')}"></div>
     <div class="field"><span class="lbl">Formality</span>${chips('formality', FORM)}</div>
     <div class="field"><span class="lbl">Pattern</span>${chips('pattern', PAT)}</div>
     <div class="field" ${SLEEVED.includes(f.category) ? '' : 'hidden'} id="sl"><span class="lbl">Sleeves</span>${chips('sleeves', ['full', 'half'])}</div>
@@ -70,9 +88,10 @@ function review(view) {
     <div class="row">${cur < q.length - 1 ? '<button class="btn" id="next">Next</button>' : ''}
       <button class="btn primary" id="save">Add ${q.length} to closet</button></div>`;
 
-  const keep = () => { f.color = $('#color', view).value.trim(); f.hex = $('#hex', view).value; };
+  const keep = () => keepForm(view, it);
   view.querySelectorAll('.chips[data-k]').forEach((box) => box.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
-    f[box.dataset.k] = b.dataset.v;
+    f[box.dataset.k] = b.dataset.v; it.touched = true;
+    if (box.dataset.k === 'category') { f.type = TYPE[f.category]; $('#type', view).value = f.type; }
     box.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', x === b));
     $('#sl', view).hidden = !SLEEVED.includes(f.category);
   })));
@@ -96,7 +115,7 @@ async function saveAll(view) {
   // Share first: Safari allows the share sheet only straight after the tap.
   const up = opts.drive ? await uploadBatchToDrive(q.map((x) => x.file), ids, opts.beautify) : 'skipped';
   for (const [i, { file, img, f }] of q.entries()) {
-    const item = { id: ids[i], type: TYPE[f.category], color: f.color, colorHex: f.hex, category: f.category, formality: f.formality,
+    const item = { id: ids[i], type: f.type || TYPE[f.category], tagSource: q[i].touched ? 'user' : 'auto', ...(q[i].touched ? { editedAt: Date.now() } : {}), color: f.color, colorHex: f.hex, category: f.category, formality: f.formality,
       pattern: f.pattern, photo: 'added', image: img.dataUrl, status: 'clean', wearCount: 0, lastWorn: null, neverWith: [],
       archived: false, updated: Date.now(), beautify: opts.beautify ? 'requested' : 'none',
       driveUploaded: up === 'shared', pendingUpload: up === 'shared' || up === 'skipped' ? undefined : file };

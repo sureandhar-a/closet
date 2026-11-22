@@ -2,6 +2,7 @@
 import { getAll, putMany, getKV, setKV, clear, getSettings, saveSettings } from './db.js';
 
 const WEAR_FIELDS = ['status', 'wearCount', 'lastWorn', 'neverWith', 'archived'];
+const TAG_FIELDS = ['category', 'type', 'color', 'colorHex', 'formality', 'pattern', 'sleeves', 'tagSource', 'editedAt'];
 const FRESH = { status: 'clean', wearCount: 0, lastWorn: null, neverWith: [], archived: false };
 
 export async function importBundle(b) {
@@ -11,6 +12,7 @@ export async function importBundle(b) {
     const old = have.get(n.id);
     const keep = old ? Object.fromEntries(WEAR_FIELDS.map((k) => [k, old[k]])) : {};
     // Laptop's 'done' wins only if it is newer work; a pending phone request survives an import that didn't process it.
+    if (old?.editedAt > (n.editedAt || 0)) for (const k of TAG_FIELDS) keep[k] = old[k]; // phone edit not on the laptop yet
     if (old?.beautify === 'requested' && !(n.beautify === 'done' && n.beautifiedAt && n.beautifiedAt > (old.requestedAt || 0))) keep.beautify = 'requested';
     return { ...FRESH, ...n, ...keep, updated: Date.now() };
   });
@@ -24,7 +26,9 @@ export async function importBundle(b) {
 export async function buildLog() {
   const [items, log, settings] = await Promise.all([getAll('items'), getAll('log'), getSettings()]);
   return { kind: 'closet-log', exported: new Date().toISOString(), settings, log,
-    items: items.map(({ id, status, wearCount, lastWorn, archived, beautify }) => ({ id, status, wearCount, lastWorn, archived, beautify })) };
+    // Tags go along so the laptop can keep your edits and see the phone's first guess for new photos.
+    items: items.map((i) => ({ id: i.id, status: i.status, wearCount: i.wearCount, lastWorn: i.lastWorn, archived: i.archived, beautify: i.beautify,
+      ...Object.fromEntries(TAG_FIELDS.map((k) => [k, i[k]]).filter(([, v]) => v !== undefined)) })) };
 }
 export async function buildBackup() {
   const [items, log, settings, plan] = await Promise.all([getAll('items'), getAll('log'), getSettings(), getKV('plan', null)]);
