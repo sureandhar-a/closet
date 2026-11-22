@@ -1,7 +1,7 @@
 // Home: weather line, day/day-type chips, outfit options (swipe), swap/lock a piece, Wear this.
 import { getAll, getKV, getSettings, put } from './db.js';
 import { wear, unwear } from './wear.js';
-import { pickOutfit, DAY_TYPES } from './picker.js';
+import { pickOutfit, DAY_TYPES, tuck } from './picker.js';
 import { getForecast } from './weather.js';
 import { $, esc, imgSrc, toast, ymd, addDays, niceDate, openSheet } from './ui.js';
 
@@ -46,7 +46,7 @@ export async function render(view) {
   let body;
   if (logged) {
     const worn = logged.items.map((id) => items.find((i) => i.id === id)).filter(Boolean);
-    body = `${card(worn, ['Logged for this day'], 'Worn')}<div class="row" style="margin-top:12px"><button class="btn" id="undo">Undo</button>
+    body = `${card(worn, ['Logged for this day'], 'Worn', null, logged.dayType)}<div class="row" style="margin-top:12px"><button class="btn" id="undo">Undo</button>
       ${date === today ? '<button class="btn primary" id="tmrw">Plan tomorrow →</button>' : ''}</div>`;
   } else {
     const ask = (exclude, lock = st.lock) => pickOutfit({ items, log, date, weather: w || {}, dayType: type, settings: s, exclude, lock });
@@ -59,7 +59,7 @@ export async function render(view) {
     if (!st.picks) {
       const picks = [];
       const p = plan?.days?.[date];
-      if (p && !st.seen.length && !Object.keys(st.lock).length) {
+      if (p && st.type == null && !st.seen.length && !Object.keys(st.lock).length) { // the plan is for the usual day type
         const o = { top: p.top, bottom: p.bottom, shoes: p.shoes };
         for (const k in o) o[k] = items.find((i) => i.id === o[k]);
         if (o.top && o.bottom && !o.top.neverWith?.includes(o.bottom.id) && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) {
@@ -88,7 +88,7 @@ export async function render(view) {
     } else {
       view.picks = picks;
       body = `<div class="carousel">${picks.map((x, n) => `<section class="slide"><h2 style="margin:4px 0 8px">Option ${n + 1}${picks.length > 1 ? `<span class="muted" style="font-weight:400"> of ${picks.length} · swipe</span>` : ''}</h2>
-        ${card(setOf(x.o), x.reasons, x.planned ? 'Planned' : '', n)}
+        ${card(setOf(x.o), x.reasons, x.planned ? 'Planned' : '', n, type)}
         <button class="btn primary block" style="margin-top:10px" data-wear="${n}">Wear this</button></section>`).join('')}</div>
         <div class="row" style="margin-top:12px"><button class="btn" id="another">Show different options</button><button class="btn" id="pack">🧳 Pack for a trip</button></div>`;
     }
@@ -158,14 +158,17 @@ const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoe
 export const collage = (set) => `<div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${
   set.map((i) => `<img class="${ROLE[i.category] || 'top'}" src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}">`).join('')}</div>`;
 // n = option index: adds swap ↻ / keep 🔒 per piece and "Don't pair".
-function card(set, reasons, badge, n) {
+function card(set, reasons, badge, n, dayType) {
   const slot = (i) => (i.category === 'ethnic' ? 'top' : i.category);
   const pieces = n == null ? `<p class="outfit-names">${set.map((i) => `${esc(i.color)} ${esc(i.type)}`).join(' · ')}</p>`
     : `<div class="pieces">${set.map((i) => `<div class="piece"><span>${esc(i.color)} ${esc(i.type)}</span>
         <button class="mini" data-swap="${n}:${slot(i)}" aria-label="Swap ${esc(i.type)}">↻</button>
         <button class="mini" data-lock="${n}:${slot(i)}" aria-pressed="${st.lock[slot(i)] === i.id}" aria-label="Keep ${esc(i.type)}">${st.lock[slot(i)] === i.id ? '🔒' : '🔓'}</button></div>`).join('')}
         <button class="mini wide" data-never="${n}">🚫 Don't pair this top &amp; bottom</button></div>`;
+  const T = set.find((i) => i.category === 'top'), B = set.find((i) => i.category === 'bottom');
+  const tk = T && B && dayType ? tuck(T, B, dayType) : null; // from the current pieces, so it follows a swap
   return `<div class="card">${collage(set)}${pieces}
+    ${tk ? `<p class="tuck">${tk.tucked ? '👔 <b>Tuck it in</b>' : '👕 <b>Wear it out</b> (untucked)'}<span class="muted"> · ${esc(tk.why)}</span></p>` : ''}
     ${badge ? `<p style="margin-top:12px"><span class="badge">${badge}</span></p>` : ''}
     <ul class="reasons">${reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
 }

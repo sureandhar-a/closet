@@ -108,9 +108,22 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     const [bl] = /jogger|drawstring|track/.test(b.type || '') ? [] : extra('belt', (i) => (!fam(sh) || !(fam(i) || rev(i)) ? 0 : rev(i) || fam(i) === fam(sh) ? 10 : -20) - 4 * gap(i, t));
     if (bl) out.belt = bl;
     if (bl && rev(bl) && fam(sh)) out.reasons.push(`Reversible belt: wear the ${fam(sh)} side`);
+    out.tuck = tuck(t, b, type);
     const [ac] = extra('accessory', (i) => (!strap(i) || !fam(sh) ? 0 : strap(i) === fam(sh) ? 8 : -15) - 4 * gap(i, t));
     if (ac) out.accessory = ac;
     return out;
   }
   return { missing: tops.length ? 'bottom' : 'top', reasons, type };
+}
+
+// Tucked or worn out (menswear rule of thumb: dress shirts and office looks tucked; t-shirts and casual
+// straight-hem shirts out; when unsure, tuck). Returns {tucked, why}, or null for kurtas etc.
+export function tuck(t, b, dayType) {
+  if (t.category !== 'top') return null;
+  const ty = t.type || '';
+  if (/t-shirt|tee|henley|polo/.test(ty)) return { tucked: false, why: 'T-shirts are worn out' };
+  if (/jogger|drawstring|track/.test(b.type || '')) return { tucked: false, why: 'Untucked with joggers' };
+  if (t.formality === 'formal' || b.formality === 'formal' || dayType === 'meeting') return { tucked: true, why: t.formality === 'formal' ? 'Dress shirt: tuck it in' : b.formality === 'formal' ? 'Formal trousers: tuck it in' : 'Meeting day: tuck it in' };
+  if (t.formality === 'casual' || dayType === 'casual') return { tucked: false, why: t.formality === 'casual' ? 'Casual shirt: wear it out' : 'Casual day: wear it out' };
+  return { tucked: true, why: 'Office day: tuck it in' };
 }

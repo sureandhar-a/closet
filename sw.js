@@ -1,6 +1,6 @@
 // App-shell cache, stale-while-revalidate: answer from cache at once, refresh it in the background (edits show on the next open).
 // Weather is cached in IndexedDB.
-const CACHE = 'closet-v21';
+const CACHE = 'closet-v22';
 const SHELL = ['./', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icon.png', ...['app', 'ui', 'wear', 'db', 'sync', 'picker', 'weather', 'image', 'home', 'closet', 'add', 'history', 'settings', 'drive', 'recognize'].map((m) => `js/${m}.js`)];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));

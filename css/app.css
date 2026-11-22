@@ -206,3 +206,4 @@ details > summary { cursor: pointer; }
 .outfit.has-layer .top { left: 16%; top: 12%; width: 40%; height: 50%; }
 /* Belt: small coil by the trouser waistband */
 .outfit .belt { left: 68%; top: 1%; width: 28%; height: 20%; z-index: 4; }
+.tuck { margin-top: 12px; font-size: 14px; }
