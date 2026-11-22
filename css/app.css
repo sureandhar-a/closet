@@ -204,3 +204,5 @@ details > summary { cursor: pointer; }
 .outfit .accessory { left: 40%; top: 72%; width: 16%; height: 22%; }
 .outfit.has-layer .layer { left: 2%; top: 3%; width: 46%; height: 60%; }
 .outfit.has-layer .top { left: 16%; top: 12%; width: 40%; height: 50%; }
+/* Belt: small coil by the trouser waistband */
+.outfit .belt { left: 68%; top: 1%; width: 28%; height: 20%; z-index: 4; }

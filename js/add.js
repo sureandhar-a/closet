@@ -7,11 +7,11 @@ import { $, esc, toast } from './ui.js';
 import { uploadBatchToDrive } from './drive.js';
 import { guessTags } from './recognize.js';
 
-const CATS = ['top', 'bottom', 'shoes', 'layer', 'ethnic', 'accessory'];
+const CATS = ['top', 'bottom', 'shoes', 'belt', 'layer', 'ethnic', 'accessory'];
 const FORM = ['formal', 'smart-casual', 'casual'];
 const PAT = ['solid', 'check', 'stripe', 'print'];
 const SLEEVED = ['top', 'layer', 'ethnic'];
-const TYPE = { top: 'shirt', bottom: 'trousers', shoes: 'shoes', layer: 'jacket', ethnic: 'kurta', accessory: 'accessory' };
+const TYPE = { top: 'shirt', bottom: 'trousers', shoes: 'shoes', layer: 'jacket', ethnic: 'kurta', belt: 'leather belt', accessory: 'watch' };
 
 let q = null; // [{file, img, f, beautify, seen, guess, touched}], loaded from kv on first render
 let cur = 0, closet = [], drive = true, connected = false;

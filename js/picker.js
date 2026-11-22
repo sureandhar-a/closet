@@ -16,7 +16,7 @@ const hash = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0
 export const comboKey = (t, b) => `${t.id}+${b.id}`;
 const prefer = (list, keep) => { const k = list.filter(keep); return k.length ? k : list; }; // filter, unless it empties the list
 
-// lock = {top|bottom|shoes|layer|accessory: id}: keep that piece. exclude = ids to avoid when there is another choice.
+// lock = {top|bottom|shoes|layer|belt|accessory: id}: keep that piece. exclude = ids to avoid when there is another choice.
 export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'normal', settings = {}, skip = [], exclude = [], lock = {} }) {
   const N = settings.noRepeatDays ?? 10, C = settings.comboNoRepeatDays ?? 7;
   const live = items.filter((i) => !i.archived && i.status !== 'laundry');
@@ -102,6 +102,12 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     if (sh && sh0 && sh !== sh0 && rainShoe(sh0) && !rainShoe(sh)) out.reasons.push(`Rain ${rain}%: darker shoes`);
     // Watch: a leather strap should be the same family as the shoes (brown with brown, black with black).
     const strap = (i) => (/brown strap/.test(i.color) ? 'brown' : /black strap/.test(i.color) ? 'black' : '');
+    // Belt: same leather family as the shoes (the strongest of the matching rules), formality like the top.
+    const rev = (i) => /reversible/.test(i.color || '');
+    // No belt with elastic waists (joggers, drawstring, track pants).
+    const [bl] = /jogger|drawstring|track/.test(b.type || '') ? [] : extra('belt', (i) => (!fam(sh) || !(fam(i) || rev(i)) ? 0 : rev(i) || fam(i) === fam(sh) ? 10 : -20) - 4 * gap(i, t));
+    if (bl) out.belt = bl;
+    if (bl && rev(bl) && fam(sh)) out.reasons.push(`Reversible belt: wear the ${fam(sh)} side`);
     const [ac] = extra('accessory', (i) => (!strap(i) || !fam(sh) ? 0 : strap(i) === fam(sh) ? 8 : -15) - 4 * gap(i, t));
     if (ac) out.accessory = ac;
     return out;

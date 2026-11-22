@@ -17,7 +17,7 @@ const MAP = [
   [/watch|clock|stopwatch|compass/, { category: 'accessory', type: 'watch', formality: 'smart-casual' }],
   [/sunglass/, { category: 'accessory', type: 'sunglasses', formality: 'casual' }],
   [/wallet|purse|backpack|mailbag/, { category: 'accessory', type: 'bag', formality: 'smart-casual' }],
-  [/buckle/, { category: 'accessory', type: 'belt', formality: 'formal' }],
+  [/buckle/, { category: 'belt', type: 'leather belt', formality: 'formal' }],
   // Clothes: tested on this closet, MobileNet calls shirts and jeans alike "suit", "sweatshirt", "poncho"...
   // so it only says "a garment"; the cut-out's shape decides top vs bottom.
   [/jean|denim|suit|tie|coat|sweatshirt|cardigan|jersey|t-shirt|poncho|wool|stole|cloak|vestment|kimono|abaya|velvet|miniskirt|pajama|apron|jacket|sweater|shirt/, GARMENT],

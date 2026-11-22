@@ -9,8 +9,8 @@ import { $, esc, imgSrc, toast, ymd, addDays, niceDate, openSheet } from './ui.j
 const st = { day: null, type: null, seen: [], lock: {}, picks: null };
 const LABEL = { normal: 'Normal', meeting: 'Meeting', casual: 'Casual', ethnic: 'Ethnic' };
 const NEED = { meeting: 'formal', normal: 'formal or smart-casual', casual: 'smart-casual or casual', ethnic: 'ethnic' };
-const SLOTS = ['top', 'bottom', 'layer', 'shoes', 'accessory'];
-const NAME = { top: 'top', bottom: 'bottom', layer: 'layer', shoes: 'shoes', accessory: 'watch' };
+const SLOTS = ['top', 'bottom', 'layer', 'shoes', 'belt', 'accessory'];
+const NAME = { top: 'top', bottom: 'bottom', layer: 'layer', shoes: 'shoes', belt: 'belt', accessory: 'watch' };
 const setOf = (o) => SLOTS.map((k) => o[k]).filter(Boolean);
 const reset = () => { st.seen = []; st.lock = {}; st.picks = null; };
 
@@ -65,7 +65,7 @@ export async function render(view) {
         if (o.top && o.bottom && !o.top.neverWith?.includes(o.bottom.id) && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) {
           // Through the picker with the planned pieces kept, so the watch/layer fit and weather reasons apply too.
           const r = ask([], Object.fromEntries(Object.entries(o).filter(([, i]) => i).map(([k, i]) => [k, i.id])));
-          if (!r.missing) picks.push({ o: { top: r.top, bottom: r.bottom, layer: r.layer, shoes: r.shoes, accessory: r.accessory }, reasons: ['Planned on the laptop', ...r.reasons.filter((x) => !/^Top not worn/.test(x))], planned: true });
+          if (!r.missing) picks.push({ o: { top: r.top, bottom: r.bottom, layer: r.layer, shoes: r.shoes, belt: r.belt, accessory: r.accessory }, reasons: ['Planned on the laptop', ...r.reasons.filter((x) => !/^Top not worn/.test(x))], planned: true });
         }
       }
       // Up to two suggestions with different tops (and other pieces where possible); cycle through everything before repeating.
@@ -75,7 +75,7 @@ export async function render(view) {
         if (r.missing && st.seen.length && !picks.length) { st.seen = []; r = ask([]); }
         if (r.missing) { if (!picks.length) picks.push(r); break; }
         if (picks.length && r.top.id === picks[0].o.top.id) break; // locked top: one option only
-        picks.push({ o: { top: r.top, bottom: r.bottom, layer: r.layer, shoes: r.shoes, accessory: r.accessory }, reasons: r.reasons });
+        picks.push({ o: { top: r.top, bottom: r.bottom, layer: r.layer, shoes: r.shoes, belt: r.belt, accessory: r.accessory }, reasons: r.reasons });
       }
       st.picks = picks;
     }
@@ -153,7 +153,7 @@ function pack(items, log, s, from) {
   };
 }
 
-const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoes: 'shoes', accessory: 'accessory' };
+const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoes: 'shoes', belt: 'belt', accessory: 'accessory' };
 // Flat-lay canvas, one slot per role (also used by History).
 export const collage = (set) => `<div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${
   set.map((i) => `<img class="${ROLE[i.category] || 'top'}" src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}">`).join('')}</div>`;

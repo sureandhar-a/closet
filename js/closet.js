@@ -6,7 +6,7 @@ import { setStatus } from './wear.js';
 import { lum } from './picker.js';
 
 const NEXT = { clean: 'worn', worn: 'laundry', laundry: 'clean' };
-const CATS = [['all', 'All'], ['top', 'Tops'], ['bottom', 'Bottoms'], ['shoes', 'Shoes'], ['layer', 'Layers'], ['ethnic', 'Ethnic'], ['accessory', 'Accessories']];
+const CATS = [['all', 'All'], ['top', 'Tops'], ['bottom', 'Bottoms'], ['shoes', 'Shoes'], ['layer', 'Layers'], ['ethnic', 'Ethnic'], ['belt', 'Belts'], ['accessory', 'Watches & more']];
 const FORMALITY = ['formal', 'smart-casual', 'casual'];
 const st = { cat: 'all', status: 'all', sort: 'color', laundry: false, archived: false, q: '' };
 
