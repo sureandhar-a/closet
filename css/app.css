@@ -207,3 +207,7 @@ details > summary { cursor: pointer; }
 /* Belt: small coil by the trouser waistband */
 .outfit .belt { left: 68%; top: 1%; width: 28%; height: 20%; z-index: 4; }
 .tuck { margin-top: 12px; font-size: 14px; }
+/* Swap / lock line icons: outline when off, filled pill when kept */
+.mini { display: inline-grid; place-items: center; color: var(--muted-2); }
+.mini svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mini[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }

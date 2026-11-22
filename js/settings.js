@@ -17,7 +17,7 @@ export async function render(view) {
       <div class="row"><input class="input" id="city" type="search" placeholder="Search city" value="${esc(s.place?.name || '')}"><button class="btn" id="geo" style="flex:none">Use location</button></div>
       <div class="chips" id="hits" style="margin-top:8px"></div></div>
     <h2>Google Drive</h2>
-    ${s.upload?.url ? `<button class="btn primary block" id="dsync">⟳ Sync with Drive</button>
+    ${s.upload?.url ? `<button class="btn primary block" id="dsync">↻ Sync with Drive</button>
       <p class="muted" style="margin-top:8px">Sends your wear log and gets the latest closet from the laptop. ${s.lastSync ? 'Last sync: ' + new Date(s.lastSync).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) + '.' : ''} New photos upload straight to Drive → <b>Closet</b>.</p>
       <button class="btn block" id="dout" style="margin-top:8px">Disconnect Drive</button>`
     : `<p class="muted">Connect once: copy the setup code on the laptop (it reaches this phone's clipboard), then tap the button.</p>
@@ -31,6 +31,10 @@ export async function render(view) {
     ${num('bottomWears', 'Wears before trousers/jeans need a wash', 1, 10)}
     ${num('eveningHour', 'Show tomorrow from (hour, 24h)', 12, 23)}
     <label class="field row" style="align-items:center"><input type="checkbox" id="cold" ${s.coldOffice ? 'checked' : ''} style="width:22px;height:22px;flex:none"><span>Cold office: always suggest a layer</span></label>
+    <h2>App</h2>
+    <div class="list"><div><span style="flex:1">Version</span><b id="ver">…</b></div></div>
+    <button class="btn block" id="upd" style="margin-top:8px">↻ Update app now</button>
+    <p class="muted" style="margin-top:6px">Gets the newest version without removing the Home Screen app. Your clothes and history stay.</p>
     <h2>Reminder</h2>
     <p class="muted">Add a daily calendar alert that opens the app. Pick the time, then open the file and tap <b>Add to Calendar</b>.</p>
     <div class="row" style="margin-top:8px"><input class="input" id="rtime" type="time" value="07:30"><button class="btn" id="rics" style="flex:none">📅 Daily reminder</button></div>
@@ -75,6 +79,20 @@ export async function render(view) {
     setPlace({ name, lat, lon });
   }, () => toast('Location blocked. Search a city instead.'));
 
+  // Installed version = the cache name; latest = what sw.js on the server says.
+  const cur = (await caches?.keys?.().catch(() => []))?.find((k) => k.startsWith('closet-')) || '';
+  fetch('sw.js', { cache: 'no-store' }).then((r) => r.text()).then((t) => {
+    const latest = t.match(/closet-v\d+/)?.[0] || '';
+    $('#ver').textContent = (cur ? cur.replace('closet-', '') : 'not installed') + (latest && latest !== cur ? ` → ${latest.replace('closet-', '')} available` : ' (latest)');
+  }).catch(() => ($('#ver').textContent = cur.replace('closet-', '') + ' (offline)'));
+  $('#upd').onclick = async () => {
+    $('#upd').disabled = true; $('#upd').textContent = 'Updating…';
+    try {
+      for (const k of await caches.keys()) await caches.delete(k); // next load comes from the network
+      await (await navigator.serviceWorker?.getRegistration())?.update();
+    } catch {}
+    location.reload();
+  };
   $('#rics').onclick = async () => {
     const [h, m] = ($('#rtime').value || '07:30').split(':'), d = new Date(), p = (n) => String(n).padStart(2, '0');
     const start = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${h}${m}00`;
@@ -90,7 +108,7 @@ export async function render(view) {
   if (ds) ds.onclick = async () => {
     ds.disabled = true; ds.textContent = 'Syncing…';
     try { const r = await syncWithDrive(); toast(`Synced · ${r.updated} updated, ${r.added} new · ${Math.round(r.bytes / 1024)} KB`); render(view); }
-    catch (e) { toast(e.message); ds.disabled = false; ds.textContent = '⟳ Sync with Drive'; }
+    catch (e) { toast(e.message); ds.disabled = false; ds.textContent = '↻ Sync with Drive'; }
   };
   const dout = $('#dout');
   if (dout) dout.onclick = async () => { if (!confirm('Disconnect Drive on this phone? Your clothes stay.')) return; delete s.upload; await saveSettings(s); render(view); };

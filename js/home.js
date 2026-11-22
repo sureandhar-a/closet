@@ -30,7 +30,7 @@ export async function render(view) {
     <div class="head"><div><h1>${hello}${s.name ? ', ' + esc(s.name) : ''}</h1>
       <div class="meta"><span>${niceDate(date)}</span>${s.place ? `<span>${esc(s.place.name)}</span>` : '<a href="#settings">Set your city</a>'}
       ${w ? `<span>${w.max}°/${w.min}° · rain ${w.rain}%</span>` : ''}${wx?.stale ? '<span>(offline)</span>' : ''}</div></div></div>
-    ${stale ? `<a class="note" style="display:block" href="#settings">⟳ Last Drive sync ${s.lastSync ? Math.round((Date.now() - new Date(s.lastSync)) / 864e5) + ' days ago' : 'never'}. Sync now: it's also your backup.</a>` : ''}
+    ${stale ? `<a class="note" style="display:block" href="#settings">↻ Last Drive sync ${s.lastSync ? Math.round((Date.now() - new Date(s.lastSync)) / 864e5) + ' days ago' : 'never'}. Sync now: it's also your backup.</a>` : ''}
     <div class="chips" style="margin-top:12px">
       <button class="chip" data-day="${today}" aria-pressed="${date === today}">Today</button>
       <button class="chip" data-day="${addDays(today, 1)}" aria-pressed="${date !== today}">Tomorrow</button></div>
@@ -115,7 +115,7 @@ export async function render(view) {
   view.querySelectorAll('[data-lock]').forEach((b) => (b.onclick = () => {
     const [n, k] = b.dataset.lock.split(':'), id = view.picks[n].o[k].id;
     if (st.lock[k] === id) delete st.lock[k]; else st.lock[k] = id;
-    toast(st.lock[k] ? `${NAME[k]} kept for new options` : 'Unlocked'); redo();
+    toast(st.lock[k] ? `${NAME[k][0].toUpperCase() + NAME[k].slice(1)} kept for new options` : 'Unlocked'); redo();
   }));
   view.querySelectorAll('[data-never]').forEach((b) => (b.onclick = async () => {
     const { top, bottom } = view.picks[b.dataset.never].o;
@@ -153,6 +153,12 @@ function pack(items, log, s, from) {
   };
 }
 
+// Line icons (Feather-style): swap = two arrows, lock open/closed.
+const ICON = {
+  swap: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4-4 4M3 7h18M7 21l-4-4 4-4M21 17H3"/></svg>',
+  open: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>',
+  shut: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+};
 const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoes: 'shoes', belt: 'belt', accessory: 'accessory' };
 // Flat-lay canvas, one slot per role (also used by History).
 export const collage = (set) => `<div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${
@@ -162,8 +168,8 @@ function card(set, reasons, badge, n, dayType) {
   const slot = (i) => (i.category === 'ethnic' ? 'top' : i.category);
   const pieces = n == null ? `<p class="outfit-names">${set.map((i) => `${esc(i.color)} ${esc(i.type)}`).join(' · ')}</p>`
     : `<div class="pieces">${set.map((i) => `<div class="piece"><span>${esc(i.color)} ${esc(i.type)}</span>
-        <button class="mini" data-swap="${n}:${slot(i)}" aria-label="Swap ${esc(i.type)}">↻</button>
-        <button class="mini" data-lock="${n}:${slot(i)}" aria-pressed="${st.lock[slot(i)] === i.id}" aria-label="Keep ${esc(i.type)}">${st.lock[slot(i)] === i.id ? '🔒' : '🔓'}</button></div>`).join('')}
+        <button class="mini" data-swap="${n}:${slot(i)}" aria-label="Swap ${esc(i.type)}">${ICON.swap}</button>
+        <button class="mini" data-lock="${n}:${slot(i)}" aria-pressed="${st.lock[slot(i)] === i.id}" aria-label="Keep ${esc(i.type)}">${st.lock[slot(i)] === i.id ? ICON.shut : ICON.open}</button></div>`).join('')}
         <button class="mini wide" data-never="${n}">🚫 Don't pair this top &amp; bottom</button></div>`;
   const T = set.find((i) => i.category === 'top'), B = set.find((i) => i.category === 'bottom');
   const tk = T && B && dayType ? tuck(T, B, dayType) : null; // from the current pieces, so it follows a swap

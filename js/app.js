@@ -23,6 +23,12 @@ addEventListener('hashchange', route);
 addEventListener('visibilitychange', () => !document.hidden && $('.tabbar a.active')?.dataset.tab === 'home' && route());
 route();
 
+// Updates: check on every open/resume; when a new version takes over, reload once so it shows straight away.
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('sw.js').catch(console.error);
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    addEventListener('visibilitychange', () => !document.hidden && reg.update().catch(() => {}));
+  }).catch(console.error);
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !closing) { closing = true; location.reload(); } });
 }
+let closing = false;
