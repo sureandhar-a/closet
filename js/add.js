@@ -82,7 +82,10 @@ function review(view) {
   $('#discard', view).onclick = () => { if (confirm('Discard these photos?')) { q.length = 0; start(view); } };
   const next = $('#next', view);
   if (next) next.onclick = () => { keep(); cur++; review(view); };
-  $('#save', view).onclick = () => { keep(); saveAll(view); };
+  $('#save', view).onclick = (e) => { // one tap only: a second tap while uploading made duplicate Drive files
+    keep(); e.currentTarget.disabled = true; e.currentTarget.textContent = 'Saving…';
+    saveAll(view).catch((err) => { toast(err.message); review(view); });
+  };
 }
 
 async function saveAll(view) {
