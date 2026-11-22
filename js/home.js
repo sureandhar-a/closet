@@ -1,7 +1,6 @@
 // Home: weather line, day-type chips, outfit card, Wear this / Another.
 import { getAll, getKV, getSettings } from './db.js';
 import { wear, unwear } from './wear.js';
-import { avatarSvg } from './avatar.js';
 import { pickOutfit, DAY_TYPES } from './picker.js';
 import { getForecast } from './weather.js';
 import { $, esc, imgSrc, toast, ymd, addDays, niceDate } from './ui.js';
@@ -34,7 +33,7 @@ export async function render(view) {
   let body;
   if (logged) {
     const worn = logged.items.map((id) => items.find((i) => i.id === id)).filter(Boolean);
-    body = `${card(worn, ['Logged for this day'], 'Worn', s.avatar || {})}<div class="row" style="margin-top:12px"><button class="btn" id="undo">Undo</button></div>`;
+    body = `${card(worn, ['Logged for this day'], 'Worn')}<div class="row" style="margin-top:12px"><button class="btn" id="undo">Undo</button></div>`;
   } else {
     const ask = (exclude) => pickOutfit({ items, log, date, weather: w || {}, dayType: type, settings: s, exclude });
     let picks = [];
@@ -55,7 +54,7 @@ export async function render(view) {
       body = `<div class="empty-state"><p><b>No ${m} to pick</b></p><p>${items.length ? 'Mark some clothes clean, or add more.' : 'Connect Google Drive in Settings to load your closet.'}</p><a class="btn primary" href="#${items.length ? 'closet' : 'settings'}">${items.length ? 'Open Closet' : 'Connect Drive'}</a></div>`;
     } else {
       view.picks = picks.map((x) => ({ set: [x.top, x.bottom, x.layer, x.shoes, x.accessory].filter(Boolean), type }));
-      body = picks.map((x, n) => `<h2 style="margin:${n ? 20 : 4}px 0 8px">Option ${n + 1}</h2>${card(view.picks[n].set, x.reasons, x.planned ? 'Planned' : '', s.avatar || {})}
+      body = picks.map((x, n) => `<h2 style="margin:${n ? 20 : 4}px 0 8px">Option ${n + 1}</h2>${card(view.picks[n].set, x.reasons, x.planned ? 'Planned' : '')}
         <button class="btn primary block" style="margin-top:10px" data-wear="${n}">Wear this</button>`).join('')
         + `<button class="btn block" id="another" style="margin-top:16px">Show different options</button>`;
     }
@@ -74,9 +73,11 @@ export async function render(view) {
   $('#undo', view)?.addEventListener('click', async () => { await unwear(date); redo(); });
 }
 
-function card(set, reasons, badge, avatar) {
-  const fig = avatar && avatarSvg(set, avatar);
-  return `<div class="card">${fig ? `<div class="avatar">${fig}</div><p class="muted" style="text-align:center">${set.map((i) => esc(i.color)).join(' · ')}</p>` : `<div class="outfit">`}${set.map((i) => `<div class="piece"><img src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}"><span class="label">${esc(i.color)}</span></div>`).join('')}${fig ? '' : '</div>'}
+const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoes: 'shoes', accessory: 'accessory' };
+function card(set, reasons, badge) {
+  const pieces = set.map((i) => `<img class="${ROLE[i.category] || 'top'}" src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}">`).join('');
+  return `<div class="card"><div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${pieces}</div>
+    <p class="outfit-names">${set.map((i) => `${esc(i.color)} ${esc(i.type)}`).join(' · ')}</p>
     ${badge ? `<p style="margin-top:12px"><span class="badge">${badge}</span></p>` : ''}
     <ul class="reasons">${reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
 }

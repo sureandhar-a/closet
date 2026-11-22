@@ -46,7 +46,6 @@ export const DEFAULT_SETTINGS = {
   noRepeatDays: 10,
   comboNoRepeatDays: 7,
   eveningHour: 18,
-  avatar: null, // {skin, hair}; null = defaults
 };
 export async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(await getKV('settings', {})) };
