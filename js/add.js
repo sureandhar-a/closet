@@ -1,7 +1,7 @@
 // Add items, Acloset-style: Camera (several in a row) or Gallery (multi-select) -> review queue -> save all.
 // Phone does resize/trim/colour; the laptop does background removal, tags and Beautify (via Drive).
 import { put } from './db.js';
-import { prepareImage } from './image.js';
+import { prepareImage, colorName } from './image.js';
 import { $, esc, toast } from './ui.js';
 import { uploadBatchToDrive } from './drive.js';
 
@@ -39,7 +39,7 @@ async function addFiles(view, files) {
   for (const file of files) {
     try {
       const img = await prepareImage(file);
-      q.push({ file, img, f: { category: 'top', formality: 'smart-casual', pattern: 'solid', sleeves: 'full', color: '', hex: img.hex } });
+      q.push({ file, img, f: { category: 'top', formality: 'smart-casual', pattern: 'solid', sleeves: 'full', color: colorName(img.hex), hex: img.hex } });
     } catch { toast(`Could not read ${file.name}`); }
   }
   if (!q.length) return start(view);
