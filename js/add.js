@@ -66,7 +66,7 @@ function review(view) {
     <div class="field"><span class="lbl">Pattern</span>${chips('pattern', PAT)}</div>
     <div class="field" ${SLEEVED.includes(f.category) ? '' : 'hidden'} id="sl"><span class="lbl">Sleeves</span>${chips('sleeves', ['full', 'half'])}</div>
     <div class="field"><span class="lbl">For all items</span><div class="chips">${tog('beautify', '✨ Beautify on laptop')}${tog('drive', '☁️ Upload to Drive')}</div>
-      ${opts.drive ? '<p class="muted" style="margin-top:6px">The share sheet opens once: choose <b>Drive</b> → folder <b>Closet</b>.</p>' : ''}</div>
+      ${opts.drive ? '<p class="muted" style="margin-top:6px">Photos go straight to Drive → <b>Closet</b>.</p>' : ''}</div>
     <div class="row">${cur < q.length - 1 ? '<button class="btn" id="next">Next</button>' : ''}
       <button class="btn primary" id="save">Add ${q.length} to closet</button></div>`;
 

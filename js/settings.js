@@ -1,6 +1,6 @@
 // Settings tab (minimal for now): name + bundle import. Weather/place, export, backup come in later steps.
 import { getSettings, saveSettings } from './db.js';
-import { importBundle, buildLog, buildBackup, restoreBackup, shareJson } from './sync.js';
+import { importBundle, buildLog, buildBackup, restoreBackup, shareJson, syncWithDrive, connectWithCode } from './sync.js';
 import { searchPlaces } from './weather.js';
 import { SKINS, HAIRS, DEFAULT_AVATAR } from './avatar.js';
 import { $, esc, toast } from './ui.js';
@@ -17,9 +17,12 @@ export async function render(view) {
     <div class="field"><span class="lbl">Skin tone</span><div class="chips" id="skin">${SKINS.map((c) => `<button class="chip" data-c="${c}" aria-pressed="${(s.avatar?.skin ?? DEFAULT_AVATAR.skin) === c}" aria-label="skin ${c}" style="background:${c};width:44px"></button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Hair colour</span><div class="chips" id="hair">${HAIRS.map((c) => `<button class="chip" data-c="${c}" aria-pressed="${(s.avatar?.hair ?? DEFAULT_AVATAR.hair) === c}" aria-label="hair ${c}" style="background:${c};width:44px"></button>`).join('')}</div></div>
     <h2>Google Drive</h2>
-    <p class="muted">${s.upload?.url ? '✅ New photos upload straight to Drive → <b>Closet</b>.' : 'New photos use the share sheet (Drive → Closet). Direct upload turns on automatically after you set it up on the laptop and import the bundle.'}</p>
+    ${s.upload?.url ? `<button class="btn primary block" id="dsync">⟳ Sync with Drive</button>
+      <p class="muted" style="margin-top:8px">Sends your wear log and gets the latest closet from the laptop. ${s.lastSync ? 'Last sync: ' + new Date(s.lastSync).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) + '.' : ''} New photos upload straight to Drive → <b>Closet</b>.</p>`
+    : `<p class="muted">Connect once: on the laptop, run the setup-code command (README) or ask Claude for your setup code. It lands on your clipboard; then paste it here.</p>
+      <div class="row" style="margin-top:8px"><input class="input" id="dcode" placeholder="Paste setup code" autocomplete="off"><button class="btn primary" id="dconnect" style="flex:none">Connect</button></div>`}
     <h2>Sync</h2>
-    <div class="list"><label class="btn" style="border-radius:0;justify-content:space-between;cursor:pointer">Import bundle from laptop
+    <div class="list"><label class="btn" style="border-radius:0;justify-content:space-between;cursor:pointer">Import from file (backup way)
       <input type="file" id="bundle" accept=".json,application/json" hidden></label></div>
     <div class="list" style="margin-top:8px"><button id="exlog">Export wear log → Drive</button>
       <button id="exbak">Full backup (with photos)</button>
@@ -42,6 +45,17 @@ export async function render(view) {
   $('#geo').onclick = () => navigator.geolocation?.getCurrentPosition(
     (g) => setPlace({ name: 'My location', lat: +g.coords.latitude.toFixed(3), lon: +g.coords.longitude.toFixed(3) }),
     () => toast('Location blocked. Search a city instead.'));
+  const ds = $('#dsync');
+  if (ds) ds.onclick = async () => {
+    ds.disabled = true; ds.textContent = 'Syncing…';
+    try { const r = await syncWithDrive(); toast(`Synced · ${r.updated} items updated, ${r.added} new`); render(view); }
+    catch (e) { toast(e.message); ds.disabled = false; ds.textContent = '⟳ Sync with Drive'; }
+  };
+  const dc = $('#dconnect');
+  if (dc) dc.onclick = async () => {
+    try { await connectWithCode($('#dcode').value); toast('Connected. Syncing…'); const r = await syncWithDrive(); toast(`Synced · ${r.added + r.updated} items`); render(view); }
+    catch (e) { toast(e.message); }
+  };
   $('#exlog').onclick = async () => toast(await shareJson(await buildLog(), 'closet-log.json'));
   $('#exbak').onclick = async () => toast(await shareJson(await buildBackup(), 'closet-backup.json'));
   $('#restore').onchange = async (e) => {

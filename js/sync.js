@@ -52,3 +52,28 @@ export async function shareJson(obj, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   return 'downloaded';
 }
+
+// One-tap sync through your Apps Script (tools/drive-upload.gs): send wear log, then fetch the latest bundle.
+export async function syncWithDrive() {
+  const s = await getSettings();
+  if (!s.upload?.url) throw new Error('Connect to Drive first');
+  const call = async (body) => {
+    const r = await fetch(s.upload.url, { method: 'POST', body: JSON.stringify({ secret: s.upload.secret, ...body }) });
+    return r.json();
+  };
+  const sent = await call({ action: 'putLog', log: await buildLog() });
+  if (!sent.ok) throw new Error(sent.error === 'bad name' ? 'Drive script is old: paste the new one and redeploy' : sent.error || 'Could not send log');
+  const b = await call({ action: 'getBundle' });
+  if (b.ok === false) throw new Error(b.error);
+  const res = await importBundle(b);
+  await saveSettings({ ...(await getSettings()), lastSync: new Date().toISOString() });
+  return res;
+}
+
+// Setup code = base64 of {url, secret}; made on the laptop (see README).
+export async function connectWithCode(code) {
+  let c;
+  try { c = JSON.parse(atob(code.trim())); } catch { throw new Error('That is not a setup code'); }
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(c.url || '') || !c.secret) throw new Error('That is not a setup code');
+  await saveSettings({ ...(await getSettings()), upload: { url: c.url, secret: c.secret } });
+}

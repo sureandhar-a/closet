@@ -1,5 +1,5 @@
 // App-shell cache. Network-first for our own files (so edits show up), cache when offline. Weather is cached in IndexedDB.
-const CACHE = 'closet-v5';
+const CACHE = 'closet-v6';
 const SHELL = ['./', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icon.png', ...['app', 'ui', 'wear', 'avatar', 'db', 'sync', 'picker', 'weather', 'image', 'home', 'closet', 'add', 'history', 'settings', 'drive'].map((m) => `js/${m}.js`)];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));
