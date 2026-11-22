@@ -64,10 +64,10 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     if (wet && lum(b.colorHex) < 60) out.reasons.push(`Rain ${rain}%: dark bottoms`);
     if (hot && t.sleeves === 'half') out.reasons.push(`${max}°C: half sleeves`);
     out.reasons.push(since(t) >= 999 ? 'Top not worn yet' : `Top not worn for ${since(t)} days`);
-    if (cold) { const l = live.filter((i) => i.category === 'layer' && i.status === 'clean').sort((x, y) => score(y) - score(x))[0]; if (l) { out.layer = l; out.reasons.push(`${max}°C: add a layer`); } }
-    const sh = live.filter((i) => i.category === 'shoes' && i.status === 'clean' && !t.neverWith?.includes(i.id)).sort((x, y) => score(y) - score(x))[0];
+    if (cold) { const l = live.filter((i) => i.category === 'layer').sort((x, y) => score(y) - score(x))[0]; if (l) { out.layer = l; out.reasons.push(`${max}°C: add a layer`); } }
+    const sh = live.filter((i) => i.category === 'shoes' && !t.neverWith?.includes(i.id)).sort((x, y) => score(y) - score(x))[0];
     if (sh) out.shoes = sh;
-    const ac = live.filter((i) => i.category === 'accessory' && i.status === 'clean').sort((x, y) => score(y) - score(x))[0];
+    const ac = live.filter((i) => i.category === 'accessory').sort((x, y) => score(y) - score(x))[0];
     if (ac) out.accessory = ac; // one accessory; the longest-unworn one
     return out;
   }

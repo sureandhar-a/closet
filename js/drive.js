@@ -26,14 +26,14 @@ async function viaScript(f, up) {
 
 export async function uploadBatchToDrive(files, ids, beautify) {
   if (!files?.length) return 'unsupported';
-  const out = files.map((f, i) => named(f, ids[i], beautify));
+  let out = files.map((f, i) => named(f, ids[i], beautify));
   const { upload } = await getSettings();
   if (upload?.url) {
     try {
-      for (const f of out) await viaScript(f, upload);
+      while (out.length) { await viaScript(out[0], upload); out = out.slice(1); } // uploaded files leave the list
       return 'shared';
     } catch (e) {
-      console.warn('Script upload failed, trying share sheet:', e);
+      console.warn('Script upload failed, trying share sheet for the rest:', e); // no second copy of those already in Drive
     }
   }
   if (!navigator.canShare?.({ files: out })) return 'unsupported';

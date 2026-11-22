@@ -19,7 +19,8 @@ async function route() {
 }
 
 addEventListener('hashchange', route);
-addEventListener('visibilitychange', () => !document.hidden && route()); // resumed Home Screen app: refresh the day
+// Resumed Home Screen app: refresh Home only (the day may have changed). Other tabs keep open sheets and typed text.
+addEventListener('visibilitychange', () => !document.hidden && $('.tabbar a.active')?.dataset.tab === 'home' && route());
 route();
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

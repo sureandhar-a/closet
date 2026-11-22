@@ -40,7 +40,7 @@ export async function render(view) {
     const p = plan?.days?.[date];
     if (p && !st.seen.length) {
       const set = [p.top, p.bottom, p.shoes].filter(Boolean).map((id) => items.find((i) => i.id === id));
-      if (set.every((i) => i && !i.archived && (i.category === 'bottom' ? i.status !== 'laundry' : i.status === 'clean'))) picks.push({ top: set[0], bottom: set[1], shoes: set[2], reasons: ['Planned on the laptop'], planned: true });
+      if (set.every((i) => i && !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) picks.push({ top: set[0], bottom: set[1], shoes: set[2], reasons: ['Planned on the laptop'], planned: true });
     }
     // Up to two suggestions with different tops; cycle through everything before repeating.
     for (let n = picks.length; n < 2; n++) {
@@ -74,9 +74,11 @@ export async function render(view) {
 }
 
 const ROLE = { top: 'top', ethnic: 'top', layer: 'layer', bottom: 'bottom', shoes: 'shoes', accessory: 'accessory' };
+// Flat-lay canvas, one slot per role (also used by History).
+export const collage = (set) => `<div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${
+  set.map((i) => `<img class="${ROLE[i.category] || 'top'}" src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}">`).join('')}</div>`;
 function card(set, reasons, badge) {
-  const pieces = set.map((i) => `<img class="${ROLE[i.category] || 'top'}" src="${imgSrc(i)}" alt="${esc(i.color)} ${esc(i.type)}">`).join('');
-  return `<div class="card"><div class="outfit${set.some((i) => i.category === 'layer') ? ' has-layer' : ''}">${pieces}</div>
+  return `<div class="card">${collage(set)}
     <p class="outfit-names">${set.map((i) => `${esc(i.color)} ${esc(i.type)}`).join(' · ')}</p>
     ${badge ? `<p style="margin-top:12px"><span class="badge">${badge}</span></p>` : ''}
     <ul class="reasons">${reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></div>`;

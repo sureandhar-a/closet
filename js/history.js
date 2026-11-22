@@ -1,6 +1,7 @@
 // History: month calendar of logged outfits + simple wear stats.
 import { getAll } from './db.js';
 import { unwear } from './wear.js';
+import { collage } from './home.js';
 import { $, esc, imgSrc, openSheet, closeSheet, ymd, niceDate } from './ui.js';
 
 let month = null; // {y, m}
@@ -38,9 +39,10 @@ export async function render(view) {
   view.querySelectorAll('.day[data-date]').forEach((b) => (b.onclick = () => {
     const e = logOf.get(b.dataset.date);
     if (!e) return;
+    const set = e.items.map((id) => byId.get(id)).filter(Boolean);
     const p = openSheet(`<h2 style="margin-top:4px">${niceDate(e.date, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
-      <div class="outfit" style="margin-top:8px">${e.items.map((id) => byId.get(id)).filter(Boolean).map((i) => `<div class="piece"><img src="${imgSrc(i)}" alt=""><span class="label">${esc(i.color)}</span></div>`).join('')}</div>
+      <div style="margin-top:8px">${collage(set)}</div><p class="outfit-names">${set.map((i) => `${esc(i.color)} ${esc(i.type)}`).join(' · ')}</p>
       <p class="muted" style="margin:12px 0">${esc(e.dayType)} day</p><button class="btn block" id="rm">Remove this entry</button>`);
-    $('#rm', p).onclick = async () => { await unwear(e.date); closeSheet(); render(view); };
+    $('#rm', p).onclick = async () => { if (!confirm('Remove this outfit from the log?')) return; await unwear(e.date); closeSheet(); render(view); };
   }));
 }

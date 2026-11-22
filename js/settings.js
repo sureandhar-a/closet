@@ -55,8 +55,9 @@ export async function render(view) {
     try { code = await navigator.clipboard.readText(); } catch { return toast('Allow Paste, or paste into the box below'); }
     connect(code);
   };
-  $('#exlog').onclick = async () => toast(await shareJson(await buildLog(), 'closet-log.json'));
-  $('#exbak').onclick = async () => toast(await shareJson(await buildBackup(), 'closet-backup.json'));
+  const said = { shared: 'Shared', cancelled: 'Cancelled', downloaded: 'Saved to Downloads' };
+  $('#exlog').onclick = async () => toast(said[await shareJson(await buildLog(), 'closet-log.json')]);
+  $('#exbak').onclick = async () => toast(said[await shareJson(await buildBackup(), 'closet-backup.json')]);
   $('#restore').onchange = async (e) => {
     const f = e.target.files[0];
     if (!f || !confirm('Replace everything on this phone with the backup?')) return;

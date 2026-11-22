@@ -25,23 +25,25 @@ export async function importBundle(b) {
 // Phone -> laptop: small log file (no images). Full backup includes images.
 export async function buildLog() {
   const [items, log, settings] = await Promise.all([getAll('items'), getAll('log'), getSettings()]);
-  return { kind: 'closet-log', exported: new Date().toISOString(), settings, log,
+  const { upload, ...safe } = settings; // the Drive link + secret never go into exported files
+  return { kind: 'closet-log', exported: new Date().toISOString(), settings: safe, log,
     // Tags go along so the laptop can keep your edits and see the phone's first guess for new photos.
     items: items.map((i) => ({ id: i.id, status: i.status, wearCount: i.wearCount, lastWorn: i.lastWorn, archived: i.archived, beautify: i.beautify,
       ...Object.fromEntries(TAG_FIELDS.map((k) => [k, i[k]]).filter(([, v]) => v !== undefined)) })) };
 }
 export async function buildBackup() {
   const [items, log, settings, plan] = await Promise.all([getAll('items'), getAll('log'), getSettings(), getKV('plan', null)]);
-  return { kind: 'closet-backup', exported: new Date().toISOString(), items, log, settings, plan };
+  const { upload, ...safe } = settings;
+  // A pending upload is a File, which JSON can't hold ({} after restore would break the Upload button): leave it out.
+  return { kind: 'closet-backup', exported: new Date().toISOString(), items: items.map(({ pendingUpload, ...i }) => i), log, settings: safe, plan };
 }
 // Replaces everything on the phone with the backup.
 export async function restoreBackup(b) {
   if (b?.kind !== 'closet-backup' || !Array.isArray(b.items) || !Array.isArray(b.log)) throw new Error('Not a closet backup file');
   await clear('items'); await clear('log');
   await putMany('items', b.items); await putMany('log', b.log);
-  await saveSettings(b.settings);
+  await saveSettings({ ...b.settings, upload: (await getSettings()).upload }); // keep this phone's Drive connection
   if (b.plan) await setKV('plan', b.plan);
-  if (b.upload?.url) await saveSettings({ ...(await getSettings()), upload: b.upload });
   return { items: b.items.length, log: b.log.length };
 }
 

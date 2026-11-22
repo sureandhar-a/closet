@@ -89,6 +89,7 @@ function review(view) {
       <button class="btn primary" id="save">Add ${q.length} to closet</button></div>`;
 
   const keep = () => keepForm(view, it);
+  ['#color', '#hex', '#type'].forEach((s) => ($(s, view).oninput = keep)); // typed text survives tab switches
   view.querySelectorAll('.chips[data-k]').forEach((box) => box.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
     f[box.dataset.k] = b.dataset.v; it.touched = true;
     if (box.dataset.k === 'category') { f.type = TYPE[f.category]; $('#type', view).value = f.type; }

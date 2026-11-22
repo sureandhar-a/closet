@@ -55,6 +55,7 @@ export async function render(view) {
       item.status = NEXT[item.status];
       await put('items', item);
       t.querySelector('.dot').className = `dot ${item.status}`;
+      for (const [s, c] of [['clean', 'c'], ['worn', 'w'], ['laundry', 'l']]) $(`.legend .${c}`, view).textContent = `${n(s)} ${s}`;
     } else sheet(item, redo);
   }));
 }
