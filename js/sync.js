@@ -1,5 +1,5 @@
 // Bundle import (laptop -> phone). Bundle owns tags + image; phone keeps wear state.
-import { getAll, putMany, getKV, setKV, clear, getSettings, saveSettings } from './db.js';
+import { getAll, putMany, del, getKV, setKV, clear, getSettings, saveSettings } from './db.js';
 
 const WEAR_FIELDS = ['status', 'wearCount', 'lastWorn', 'neverWith', 'archived'];
 const TAG_FIELDS = ['category', 'type', 'color', 'colorHex', 'formality', 'pattern', 'sleeves', 'tagSource', 'editedAt'];
@@ -17,6 +17,7 @@ export async function importBundle(b) {
     return { ...FRESH, ...n, ...keep, updated: Date.now() };
   });
   await putMany('items', items);
+  for (const id of b.removed || []) if (!b.items.some((i) => i.id === id)) await del('items', id); // duplicates / items deleted on the laptop
   if (b.plan) await setKV('plan', b.plan);
   if (b.upload?.url) await saveSettings({ ...(await getSettings()), upload: b.upload });
   return { added: items.filter((i) => !have.has(i.id)).length, updated: items.filter((i) => have.has(i.id)).length };
