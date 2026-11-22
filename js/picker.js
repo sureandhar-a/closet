@@ -1,7 +1,7 @@
 // Pure outfit rules. No DOM/db imports so it runs in the browser and in Node.
 const DAY = 864e5;
 const FORMALITY = { meeting: ['formal'], normal: ['formal', 'smart-casual'], casual: ['smart-casual', 'casual'] };
-// Bottoms are looser (few formal pairs): office days just skip casual ones like joggers.
+// Bottoms and shoes are looser (few formal ones): office days just skip casual ones like joggers or sandals.
 const BOTTOM_FORMALITY = { meeting: ['formal', 'smart-casual'], normal: ['formal', 'smart-casual'], casual: ['formal', 'smart-casual', 'casual'] };
 export const DAY_TYPES = ['normal', 'meeting', 'casual', 'ethnic'];
 
@@ -69,7 +69,9 @@ export function pickOutfit({ items, log = [], date, weather = {}, dayType = 'nor
     if (hot && t.sleeves === 'half') out.reasons.push(`${max}°C: half sleeves`);
     out.reasons.push(since(t) >= 999 ? 'Top not worn yet' : `Top not worn for ${since(t)} days`);
     if (cold) { const l = live.filter((i) => i.category === 'layer').sort((x, y) => score(y) - score(x))[0]; if (l) { out.layer = l; out.reasons.push(`${max}°C: add a layer`); } }
-    const sh = live.filter((i) => i.category === 'shoes' && !t.neverWith?.includes(i.id)).sort((x, y) => score(y) - score(x))[0];
+    const shoes = live.filter((i) => i.category === 'shoes' && !t.neverWith?.includes(i.id));
+    const fit = shoes.filter((i) => BOTTOM_FORMALITY[type].includes(i.formality));
+    const sh = (fit.length ? fit : shoes).sort((x, y) => score(y) - score(x))[0];
     if (sh) out.shoes = sh;
     const ac = live.filter((i) => i.category === 'accessory').sort((x, y) => score(y) - score(x))[0];
     if (ac) out.accessory = ac; // one accessory; the longest-unworn one
