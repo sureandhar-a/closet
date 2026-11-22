@@ -3,6 +3,8 @@
 // ponytail: ImageNet has no "dress shirt" or "trousers" class, so those fall back to top/shirt; the laptop fixes them.
 const TF = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js';
 const MN = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js';
+// Subresource integrity: the browser refuses the file if the CDN ever serves something else.
+const SRI = { [TF]: 'sha384-vE8hbVJ4lezako5rlvE7bY0BVzWlFhZncPlckrqNwcUQpVtgbENTgZ8TBbnPjZre', [MN]: 'sha384-oBAqwJ0tv9zzKlbIZyBhhXlEvU/PMrSMqDyOHlEZVC8xWHx4yPySuS7vRikRcYFq' };
 
 const GARMENT = { garment: true };
 // ImageNet label (lower case, first name) -> tags. Order matters only for readability.
@@ -23,7 +25,7 @@ const MAP = [
 
 const script = (src) => new Promise((ok, fail) => {
   const s = document.createElement('script');
-  s.src = src; s.crossOrigin = 'anonymous'; s.onload = ok; s.onerror = () => fail(new Error('model download failed'));
+  s.src = src; s.integrity = SRI[src]; s.crossOrigin = 'anonymous'; s.onload = ok; s.onerror = () => fail(new Error('model download failed'));
   document.head.append(s);
 });
 let model;

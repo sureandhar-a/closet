@@ -1,19 +1,23 @@
 // Bundle import (laptop -> phone). Bundle owns tags + image; phone keeps wear state.
 import { getAll, putMany, del, getKV, setKV, clear, getSettings, saveSettings } from './db.js';
 
-const WEAR_FIELDS = ['status', 'wearCount', 'lastWorn', 'neverWith', 'archived'];
+const WEAR_FIELDS = ['status', 'wearCount', 'lastWorn', 'neverWith', 'archived', 'uses', 'price']; // phone-owned
 const TAG_FIELDS = ['category', 'type', 'color', 'colorHex', 'formality', 'pattern', 'sleeves', 'tagSource', 'editedAt'];
 const FRESH = { status: 'clean', wearCount: 0, lastWorn: null, neverWith: [], archived: false };
 
 export async function importBundle(b) {
   if (b?.kind !== 'closet-bundle' || !Array.isArray(b.items)) throw new Error('Not a closet bundle file');
   const have = new Map((await getAll('items')).map((i) => [i.id, i]));
-  const items = b.items.map((n) => {
+  const gone = new Set(await getKV('deleted', [])); // deleted on this phone; the laptop drops them at its next sync
+  const items = b.items.filter((n) => !gone.has(n.id)).map((n) => {
     const old = have.get(n.id);
-    const keep = old ? Object.fromEntries(WEAR_FIELDS.map((k) => [k, old[k]])) : {};
+    const keep = old ? Object.fromEntries(WEAR_FIELDS.map((k) => [k, old[k]]).filter(([, v]) => v !== undefined)) : {};
+    // Phone tags win when edited here and not yet seen by the laptop, or when the laptop hasn't tagged the item yet.
+    if (old?.editedAt > (n.editedAt || 0) || (old && n.tagged === false)) for (const k of TAG_FIELDS) if (old[k] != null) keep[k] = old[k];
     // Laptop's 'done' wins only if it is newer work; a pending phone request survives an import that didn't process it.
-    if (old?.editedAt > (n.editedAt || 0)) for (const k of TAG_FIELDS) keep[k] = old[k]; // phone edit not on the laptop yet
     if (old?.beautify === 'requested' && !(n.beautify === 'done' && n.beautifiedAt && n.beautifiedAt > (old.requestedAt || 0))) keep.beautify = 'requested';
+    if (old?.cancelledAt && n.beautify === 'requested') keep.beautify = old.beautify; // you cancelled it here; the laptop clears it next sync
+    if (!n.image && old?.image) keep.image = old.image; // incremental sync: unchanged images aren't re-sent
     return { ...FRESH, ...n, ...keep, updated: Date.now() };
   });
   await putMany('items', items);
@@ -30,7 +34,8 @@ export async function buildLog() {
   return { kind: 'closet-log', exported: new Date().toISOString(), settings: safe, log,
     // Tags go along so the laptop can keep your edits and see the phone's first guess for new photos.
     items: items.map((i) => ({ id: i.id, status: i.status, wearCount: i.wearCount, lastWorn: i.lastWorn, archived: i.archived, beautify: i.beautify,
-      ...Object.fromEntries(TAG_FIELDS.map((k) => [k, i[k]]).filter(([, v]) => v !== undefined)) })) };
+      ...Object.fromEntries(TAG_FIELDS.map((k) => [k, i[k]]).filter(([, v]) => v !== undefined)) })),
+    deleted: await getKV('deleted', []) };
 }
 export async function buildBackup() {
   const [items, log, settings, plan] = await Promise.all([getAll('items'), getAll('log'), getSettings(), getKV('plan', null)]);
@@ -70,11 +75,13 @@ export async function syncWithDrive() {
   };
   const sent = await call({ action: 'putLog', log: await buildLog() });
   if (!sent.ok) throw new Error(sent.error === 'bad name' ? 'Drive script is old: paste the new one and redeploy' : sent.error || 'Could not send log');
-  const b = await call({ action: 'getBundle' });
+  // Tell the script which image versions we already have, so it leaves those images out.
+  const haveV = Object.fromEntries((await getAll('items')).filter((i) => i.v && i.image).map((i) => [i.id, i.v]));
+  const b = await call({ action: 'getBundle', have: haveV });
   if (b.ok === false) throw new Error(b.error);
   const res = await importBundle(b);
   await saveSettings({ ...(await getSettings()), lastSync: new Date().toISOString() });
-  return res;
+  return { ...res, bytes: JSON.stringify(b).length };
 }
 
 // Setup code = base64 of {url, secret}; made on the laptop (see README).

@@ -137,7 +137,7 @@ img { display: block; max-width: 100%; }
 .cal .day span { position: absolute; top: 2px; left: 4px; color: var(--muted-2); }
 .cal .day img { max-height: 80%; object-fit: contain; }
 
-/* Avatar */
+
 
 /* Beautify (free): studio-card look for cut-outs */
 .tile img, .outfit img, .hero-img img, .thumb img { filter: drop-shadow(0 6px 8px rgba(0,0,0,.18)); }
@@ -177,3 +177,30 @@ img { display: block; max-width: 100%; }
 .strip-t img { max-height: 100%; object-fit: contain; }
 .strip-t.on { border-color: var(--primary); }
 .strip-t.ok::after { content: "✓"; position: absolute; top: 2px; right: 4px; font-size: 11px; color: var(--clean); font-weight: 700; }
+
+/* Sheet close, tile badges, home option carousel, per-piece controls */
+.sheet .panel { position: relative; }
+.sheet .close { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--surface); cursor: pointer; font-size: 15px; z-index: 2; }
+.tb { position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 600; background: var(--bg); border-radius: 9999px; padding: 1px 7px; }
+.legend button { border: 0; background: none; padding: 4px 0; cursor: pointer; color: inherit; font-size: inherit; }
+.legend button[aria-pressed="true"] { color: var(--text); font-weight: 700; text-decoration: underline; }
+.legend .c::before, .legend .w::before, .legend .l::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.carousel { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.carousel::-webkit-scrollbar { display: none; }
+.carousel .slide { flex: 0 0 100%; scroll-snap-align: center; }
+.pieces { display: grid; gap: 6px; margin-top: 10px; }
+.piece { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted-2); }
+.piece span { flex: 1; }
+.mini { min-width: 36px; min-height: 36px; border-radius: 9999px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 14px; }
+.mini[aria-pressed="true"] { background: var(--surface); border-color: var(--primary); }
+.mini.wide { width: 100%; font-size: 13px; color: var(--muted-2); }
+.btn.danger { color: var(--accent); background: transparent; border: 1px solid var(--border); }
+.pick { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; }
+.thumb-btn { flex: none; width: 56px; height: 72px; border-radius: var(--r-md); background: var(--surface); border: 2px solid transparent; padding: 4px; cursor: pointer; display: grid; place-items: center; }
+.thumb-btn img { max-height: 100%; object-fit: contain; }
+.thumb-btn[aria-pressed="true"] { border-color: var(--primary); }
+details > summary { cursor: pointer; }
+/* Accessory sits in the empty lower-left, off the waistband; a layer sits behind the top */
+.outfit .accessory { left: 40%; top: 72%; width: 16%; height: 22%; }
+.outfit.has-layer .layer { left: 2%; top: 3%; width: 46%; height: 60%; }
+.outfit.has-layer .top { left: 16%; top: 12%; width: 40%; height: 50%; }

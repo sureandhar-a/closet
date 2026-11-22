@@ -13,10 +13,11 @@ export function toast(msg) {
   toastTimer = setTimeout(() => (t.hidden = true), 2400);
 }
 
-// Bottom sheet. Returns the panel element; closes on backdrop tap.
+// Bottom sheet. Returns the panel element; closes on ✕ or backdrop tap.
 export function openSheet(html) {
   const s = $('#sheet');
-  s.innerHTML = `<div class="panel" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  s.innerHTML = `<div class="panel" role="dialog" aria-modal="true"><div class="grab"></div><button class="close" aria-label="Close">✕</button>${html}</div>`;
+  s.querySelector('.close').onclick = closeSheet;
   s.hidden = false;
   s.onclick = (e) => { if (e.target === s) closeSheet(); };
   return s.firstElementChild;

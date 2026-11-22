@@ -47,6 +47,8 @@ export async function prepareImage(file, max = 600) {
 export function colorName(hex) {
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.replace('#', '').slice(i, i + 2), 16) / 255);
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), c = mx - mn, l = (mx + mn) / 2;
+  const h0 = c ? (mx === r ? ((g - b) / c + 6) % 6 : mx === g ? (b - r) / c + 2 : (r - g) / c + 4) * 60 : 0;
+  if (c >= 0.04 && c < 0.09 && l >= 0.1 && l < 0.4 && h0 >= 15 && h0 < 50) return 'brown'; // dark leather/khaki reads grey otherwise
   if (c < 0.09 || l < 0.1) {
     if (l < 0.15) return 'black';
     if (l < 0.38) return 'charcoal grey';

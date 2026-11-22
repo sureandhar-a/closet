@@ -22,7 +22,7 @@ async function tx(store, mode, fn) {
   return new Promise((res, rej) => {
     const t = db.transaction(store, mode);
     const out = fn(t.objectStore(store));
-    t.oncomplete = () => res(out?.result ?? out);
+    t.oncomplete = () => res(out instanceof IDBRequest ? out.result : out); // a missing key gives undefined, not the request
     t.onerror = t.onabort = () => rej(t.error);
   });
 }
@@ -46,6 +46,8 @@ export const DEFAULT_SETTINGS = {
   noRepeatDays: 10,
   comboNoRepeatDays: 7,
   eveningHour: 18,
+  bottomWears: 3, // wears before a bottom counts as worn
+  coldOffice: false, // always suggest a layer (air-conditioned office)
 };
 export async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(await getKV('settings', {})) };
