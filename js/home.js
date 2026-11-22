@@ -52,7 +52,7 @@ export async function render(view) {
     }
     if (picks[0].missing) {
       const m = picks[0].missing;
-      body = `<div class="empty-state"><p><b>No ${m} to pick</b></p><p>${items.length ? 'Mark some clothes clean, or add more.' : 'Import your closet first.'}</p><a class="btn primary" href="#${items.length ? 'closet' : 'settings'}">${items.length ? 'Open Closet' : 'Open Settings'}</a></div>`;
+      body = `<div class="empty-state"><p><b>No ${m} to pick</b></p><p>${items.length ? 'Mark some clothes clean, or add more.' : 'Connect Google Drive in Settings to load your closet.'}</p><a class="btn primary" href="#${items.length ? 'closet' : 'settings'}">${items.length ? 'Open Closet' : 'Connect Drive'}</a></div>`;
     } else {
       view.picks = picks.map((x) => ({ set: [x.top, x.bottom, x.layer, x.shoes, x.accessory].filter(Boolean), type }));
       body = picks.map((x, n) => `<h2 style="margin:${n ? 20 : 4}px 0 8px">Option ${n + 1}</h2>${card(view.picks[n].set, x.reasons, x.planned ? 'Planned' : '', s.avatar || {})}

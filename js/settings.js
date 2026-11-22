@@ -19,8 +19,9 @@ export async function render(view) {
     <h2>Google Drive</h2>
     ${s.upload?.url ? `<button class="btn primary block" id="dsync">⟳ Sync with Drive</button>
       <p class="muted" style="margin-top:8px">Sends your wear log and gets the latest closet from the laptop. ${s.lastSync ? 'Last sync: ' + new Date(s.lastSync).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) + '.' : ''} New photos upload straight to Drive → <b>Closet</b>.</p>`
-    : `<p class="muted">Connect once: on the laptop, run the setup-code command (README) or ask Claude for your setup code. It lands on your clipboard; then paste it here.</p>
-      <div class="row" style="margin-top:8px"><input class="input" id="dcode" placeholder="Paste setup code" autocomplete="off"><button class="btn primary" id="dconnect" style="flex:none">Connect</button></div>`}
+    : `<p class="muted">Connect once: copy the setup code on the laptop (it reaches this phone's clipboard), then tap the button.</p>
+      <button class="btn primary block" id="dpaste" style="margin-top:8px">📋 Paste setup code &amp; connect</button>
+      <div class="row" style="margin-top:8px"><input class="input" id="dcode" placeholder="…or paste it here" autocomplete="off"><button class="btn" id="dconnect" style="flex:none">Connect</button></div>`}
     <h2>Sync</h2>
     <div class="list"><label class="btn" style="border-radius:0;justify-content:space-between;cursor:pointer">Import from file (backup way)
       <input type="file" id="bundle" accept=".json,application/json" hidden></label></div>
@@ -51,10 +52,17 @@ export async function render(view) {
     try { const r = await syncWithDrive(); toast(`Synced · ${r.updated} items updated, ${r.added} new`); render(view); }
     catch (e) { toast(e.message); ds.disabled = false; ds.textContent = '⟳ Sync with Drive'; }
   };
-  const dc = $('#dconnect');
-  if (dc) dc.onclick = async () => {
-    try { await connectWithCode($('#dcode').value); toast('Connected. Syncing…'); const r = await syncWithDrive(); toast(`Synced · ${r.added + r.updated} items`); render(view); }
+  const connect = async (code) => {
+    try { await connectWithCode(code); toast('Connected. Syncing…'); const r = await syncWithDrive(); toast(`Synced · ${r.added + r.updated} items`); render(view); }
     catch (e) { toast(e.message); }
+  };
+  const dc = $('#dconnect');
+  if (dc) dc.onclick = () => connect($('#dcode').value);
+  const dp = $('#dpaste');
+  if (dp) dp.onclick = async () => {
+    let code = '';
+    try { code = await navigator.clipboard.readText(); } catch { return toast('Allow Paste, or paste into the box below'); }
+    connect(code);
   };
   $('#exlog').onclick = async () => toast(await shareJson(await buildLog(), 'closet-log.json'));
   $('#exbak').onclick = async () => toast(await shareJson(await buildBackup(), 'closet-backup.json'));
