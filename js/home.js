@@ -56,7 +56,7 @@ export async function render(view) {
       if (p && !st.seen.length && !Object.keys(st.lock).length) {
         const o = { top: p.top, bottom: p.bottom, shoes: p.shoes };
         for (const k in o) o[k] = items.find((i) => i.id === o[k]);
-        if (o.top && o.bottom && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) picks.push({ o, reasons: ['Planned on the laptop'], planned: true });
+        if (o.top && o.bottom && !o.top.neverWith?.includes(o.bottom.id) && setOf(o).every((i) => !i.archived && (i.category === 'top' || i.category === 'ethnic' ? i.status === 'clean' : i.status !== 'laundry'))) picks.push({ o, reasons: ['Planned on the laptop'], planned: true });
       }
       // Up to two suggestions with different tops (and other pieces where possible); cycle through everything before repeating.
       for (let n = picks.length; n < 2; n++) {

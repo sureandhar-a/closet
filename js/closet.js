@@ -14,7 +14,7 @@ const sorters = {
   color: (a, b) => lum(b.colorHex) - lum(a.colorHex), // light -> dark
   worn: (a, b) => (a.lastWorn || '').localeCompare(b.lastWorn || ''), // longest unworn first
 };
-const badge = (i) => (i.pendingUpload ? '☁️' : i.beautify === 'requested' ? '✨' : i.needsPhoto || i.tagSource === 'phone' ? 'New' : '');
+const badge = (i) => (i.pendingUpload ? '☁️' : i.beautify === 'requested' ? '✨' : i.needsPhoto || i.tagSource === 'auto' ? 'New' : '');
 
 export async function render(view) {
   const all = await getAll('items');

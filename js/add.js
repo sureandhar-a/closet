@@ -80,12 +80,13 @@ function keepForm(view, it) { // copy the typed colour back before re-rendering
 const dist = (a = '#808080', b = '#808080') => Math.hypot(...[1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16)));
 const lookalike = (f) => closet.find((i) => !i.archived && i.category === f.category && dist(i.colorHex, f.hex) < 40);
 
+// Quarter turn of both the preview and the full-size original (the laptop cuts out and beautifies from the original).
+const turn = (src, w, h) => { const c = document.createElement('canvas'); c.width = h; c.height = w; const g = c.getContext('2d'); g.translate(h, 0); g.rotate(Math.PI / 2); g.drawImage(src, 0, 0); return c; };
 async function rotate(it) {
   const im = new Image(); im.src = it.img.dataUrl; await im.decode();
-  const c = document.createElement('canvas'); c.width = im.height; c.height = im.width;
-  const g = c.getContext('2d'); g.translate(c.width, 0); g.rotate(Math.PI / 2); g.drawImage(im, 0, 0);
-  it.img = { ...it.img, dataUrl: c.toDataURL('image/png'), ratio: it.img.ratio && 1 / it.img.ratio };
-  it.file = await new Promise((r) => c.toBlob((b) => r(new File([b], 'photo.png', { type: 'image/png' })), 'image/png'));
+  it.img = { ...it.img, dataUrl: turn(im, im.width, im.height).toDataURL('image/png'), ratio: it.img.ratio && 1 / it.img.ratio };
+  const bmp = await createImageBitmap(it.file), type = it.file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  it.file = await new Promise((r) => turn(bmp, bmp.width, bmp.height).toBlob((b) => r(new File([b], 'photo', { type })), type, 0.92));
 }
 
 function review(view) {
